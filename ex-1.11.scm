@@ -5,16 +5,15 @@
 	 (* 2 (f (- n 2)))
 	 (* 3 (f (- n 3))))))
 
-(define (ff n)
-  (define (f-iter fn fn-1 fn-2 counter)
-    (if (> counter n)
-	fn
-	(f-iter (+ fn
-		   (* 2 fn-1)
-		   (* 3 fn-2))
-		fn
-		fn-1
-		(+ counter 1))))
-  (if (< n 3)
-      n
-      (f-iter 2 1 0 3)))
+;; http://community.schemewiki.org/?sicp-ex-1.11
+(define (f-iter n)
+  (define (iter a b c counter)
+    (if (= counter 0)
+	a
+	(iter b
+	      c
+	      (+ c
+		 (* 2 b)
+		 (* 3 a))
+	      (- counter 1))))
+  (iter 0 1 2 n))

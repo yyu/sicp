@@ -1,13 +1,100 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 4.1 The Metacircular Evaluator
+; 4.1 the metacircular evaluator
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                                                                  ;
+;                                1. eval the subexpressions                                                        ;
+;                        eval    |  ----                                                                           ;
+; compound expression  ------->  |                                                                                 ;
+;                                |                                                                                 ;
+;                                2. apply the value of operator subexpression                                      ;
+;                                   ^^^^^                                                                          ;
+;                                      to the values of operand subexpressions                                     ;
+;                                      ^^                                                                          ;
+;                                                                                                                  ;
+;                                                                                                                  ;
+;                        expressions                                                                               ;
+;                                                                                                                  ;
+;                                                f,                                                                ;
+;           p'                                   8l"b                                                              ;
+;         d'                                     l"bp:b                                                            ;
+;       .'                                       l` 8:                                                             ;
+;      ]                .,ad88888888baa,             8b.                                                           ;
+;     d:            ,d8p"""        ""9888ba.          o8.                                                          ;
+;    jp          .a8"          ,ad88888888888a         "b.                                                         ;
+;   ,p          ap'          ,88888888888888888a        'b                                                         ;
+;   d'        ,8"           ,88888888888888888888,       '[                                                        ;
+;  ,b        ,8'            (888888888888888888888,       b                                                        ;
+;  d[       ,8'             `8888888888888888888888       8[     until we get down to                              ;
+;  8'       8)               `88888888"""""""888888       'b     * symbols (values are looked up in environment)   ;
+;  b        8                  "888888 apply 888888        b     * primitive procedures (applied directly)         ;
+;  b        8        eval       `88888,,,,,,,888888        b                                                       ;
+;  b        8)                    "8888888888888888        b                                                       ;
+;  8[       (b                     "88888888888888'       ,b                                                       ;
+;  ][       `8,                     8888888888888)        8[                                                       ;
+;   bo       "8a                   ,888888888888)         p                                                        ;
+;   ]8         v8,                 d88888888888"         o[                                                        ;
+;    yb         `8b,             ,d8888888888p'         op                                                         ;
+;     8           `v8a,       ,ad8888888888p'          ,p'                                                         ;
+;     `88            ""88888888888888888p"             p                                                           ;
+;       y8                """"""""""""               ,p                                                            ;
+;        y8   l                                     8p                                                             ;
+;         `y8:l                                    p'                                                              ;
+;        "'l\y8                                  8p'                                                               ;
+;           `'y                                 '                                                                  ;
+;                                                                                                                  ;
+;             procedures to be applied to arguments                                                                ;
+;                                                                                                                  ;
+;                                                                                                                  ;
+;                                                                   | formal parameters -. are   |                 ;
+;                                  1. extend environment by a frame |                    | bound |                 ;
+; compound procedure --.           |                                |        arguments <-' to    |                 ;
+;                      | apply to  |                                                                               ;
+;        arguments <---' ^^^^^ ^^  |                                                                               ;
+;                                  2. eval the body of the procedure in the new environment                        ;
+;                                     ----                                                                         ;
+;                                                                                                                  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; 4.1.1 The Core of the Evaluator
 
 ; Eval
 
+
 ; Primitive expressions
+;
+;  * For self-evaluating expressions, such as numbers, eval returns the expression itself.
+;        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;
+;  * Eval must look up variables in the environment to find their values.
+;              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 ; Special forms
+;
+;  * For quoted expressions, eval returns the expression that was quoted.
+;        ~~~~~~~~~~~~~~~~~~
+;
+;  * An assignment to (or a definition of) a variable must recursively call eval
+;       ~~~~~~~~~~~~~       ~~~~~~~~~~~~~  ~~~~~~~~~~
+;    to compute the new value to be associated with the variable.
+;    The environment must be modified to change (or create) the binding of the variable.
+;
+;  * An if expression requires special processing of its parts, so as to evaluate the consequent
+;       ~~~~~~~~~~~~~
+;    if the predicate is true, and otherwise to evaluate the alternative.
+;
+;  * A lambda expression must be transformed into an applicable procedure by
+;      ~~~~~~~~~~~~~~~~~
+;    packaging together the parameters and body specified by the lambda expression
+;    with the environment of the evaluation.
+;
+;  * A begin expression requires evaluating its sequence of expressions in the order in which they appear.
+;      ~~~~~~~~~~~~~~~~
+;
+;  * A case analysis (cond) is transformed into a nest of if expressions and then evaluated.
+;      ~~~~~~~~~~~~~~~~~~~~
+
 
 ; Combinations
 
@@ -404,6 +491,17 @@
        primitive-procedures))
 
 (define (apply-primitive-procedure proc args)
+  ; apply-in-underlying-scheme is the apply procedure we have used in earlier chapters.
+  ; The metacircular evaluator’s apply procedure (4.1.1) models the working of
+  ; this primitive. Having two different things called apply leads to a technical
+  ; problem in running the metacircular evaluator, because defining the metacircular
+  ; evaluator’s apply will mask the definition of the primitive. One way around this
+  ; is to rename the metacircular apply to avoid conflict with the name of the
+  ; primitive procedure. We have assumed instead that we have saved a reference
+  ; to the underlying apply by doing
+  ;   (define apply-in-underlying-scheme apply)
+  ; before defining the metacircular apply. This allows us to access the original
+  ; version of apply under a different name.”
   (apply-in-underlying-scheme
    (primitive-implementation proc) args))
 

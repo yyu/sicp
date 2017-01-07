@@ -50,25 +50,42 @@
                                                  ; and this final stream is printed at the terminal
            (query-driver-loop)))))
 
-  ; Here, as in the other evaluators in this chapter, we use an abstract syntax for the expressions of the query language. The implementation of the expression syntax, including the predicate assertion-to-be-added? and the selector add-assertion-body, is given in section 4.4.4.7. Add-rule-or-assertion! is defined in section 4.4.4.5.
+; Here, as in the other evaluators in this chapter, we use an abstract syntax for the expressions of the query language.
+; The implementation of the expression syntax,
+;       including the predicate assertion-to-be-added? and the selector add-assertion-body,
+;     is given in section 4.4.4.7.
+;                         ^^^^^^^
+; Add-rule-or-assertion! is defined in section 4.4.4.5.
+;                                              ^^^^^^^
 
-  ; Before doing any processing on an input expression, the driver loop transforms it syntactically into a form that makes the processing more efficient. This involves changing the representation of pattern variables. When the query is instantiated, any variables that remain unbound are transformed back to the input representation before being printed. These transformations are performed by the two procedures query-syntax-process and contract-question-mark (section  4.4.4.7).
+; Before doing any processing on an input expression, the driver loop transforms it syntactically
+; into a form that makes the processing more efficient.
+; This involves changing the representation of pattern variables.
+; When the query is instantiated, any variables that remain unbound
+; are transformed back to the input representation before being printed.
+; These transformations are performed by the two procedures
+;     query-syntax-process and contract-question-mark (section  4.4.4.7).
+;                                                               ^^^^^^^
 
-  ; To instantiate an expression, we copy it, replacing any variables in the expression by their values in a given frame. The values are themselves instantiated, since they could contain variables (for example, if ?x in exp is bound to ?y as the result of unification and ?y is in turn bound to 5). The action to take if a variable cannot be instantiated is given by a procedural argument to instantiate.
 
-(define (instantiate exp frame unbound-var-handler)
-  (define (copy exp)
+(define (instantiate exp frame unbound-var-handler)  ; To instantiate an expression, we
+  (define (copy exp)                                 ; copy it,
+                                                     ; replacing any variables in the expression by their values in a given frame.
+                                                     ; The values are themselves instantiated, since they could contain variables (for example,
+                                                     ; if ?x in exp is bound to ?y as the result of unification and ?y is in turn bound to 5).
     (cond ((var? exp)
            (let ((binding (binding-in-frame exp frame)))
              (if binding
                  (copy (binding-value binding))
-                 (unbound-var-handler exp frame))))
+                 (unbound-var-handler exp frame))))  ; The action to take if a variable cannot be instantiated
+                                                     ; is given by a procedural argument to instantiate.
           ((pair? exp)
            (cons (copy (car exp)) (copy (cdr exp))))
           (else exp)))
   (copy exp))
 
-  ; The procedures that manipulate bindings are defined in section 4.4.4.8.
+; The procedures that manipulate bindings are defined in section 4.4.4.8.
+;                                                                ^^^^^^^
 
 
   ; 4.4.4.2  The Evaluator

@@ -88,24 +88,45 @@
 ;                                                                ^^^^^^^
 
 
-  ; 4.4.4.2  The Evaluator
+; 4.4.4.2  The Evaluator
 
-  ; The qeval procedure, called by the query-driver-loop, is the basic evaluator of the query system. It takes as inputs a query and a stream of frames, and it returns a stream of extended frames. It identifies special forms by a data-directed dispatch using get and put, just as we did in implementing generic operations in chapter 2. Any query that is not identified as a special form is assumed to be a simple query, to be processed by simple-query.
-
-(define (qeval query frame-stream)
+(define (qeval query frame-stream)  ; The qeval procedure, called by the query-driver-loop, is the basic evaluator of the query system.
+                                    ; It takes as inputs a query and a stream of frames, and it returns a stream of extended frames.
   (let ((qproc (get (type query) 'qeval)))
+                                             ; It identifies special forms by a data-directed dispatch using get and put,
+                                             ; just as we did in implementing generic operations in chapter 2.
     (if qproc
         (qproc (contents query) frame-stream)
-        (simple-query query frame-stream))))
+        (simple-query query frame-stream)))) ; Any query that is not identified as a special form is assumed to be a simple query,
+                                             ; to be processed by simple-query.
 
-  ; Type and contents, defined in section 4.4.4.7, implement the abstract syntax of the special forms.
+; Type and contents, defined in section 4.4.4.7, implement the abstract syntax of the special forms.
+;                                       ^^^^^^^
 
 
-  ; Simple queries
+; Simple queries
 
-  ; The simple-query procedure handles simple queries. It takes as arguments a simple query (a pattern) together with a stream of frames, and it returns the stream formed by extending each frame by all data-base matches of the query.
+(define (simple-query query-pattern frame-stream)  ; The simple-query procedure handles simple queries.
+  ; It takes as arguments a simple query (a pattern) together with a stream of frames,
+                        ; .-------------------.                    .--------. .--------.
+                        ; | foo ?x and ?y bar |                    |        | |        |
+                        ; '-------------------'                    |        | |        | ... stream of frames ...
+                        ;                                          '--------' '--------'
+  ; and it returns the stream formed by extending each frame by all data-base matches of the query.
 
-(define (simple-query query-pattern frame-stream)
+  ; For each frame in the input stream, we use find-assertions (section 4.4.4.3)
+  ;                                                                     ^^^^^^^
+  ; to match the pattern against all assertions in the data base, producing a stream of extended frames,
+  ; and we use apply-rules (section 4.4.4.4) to apply all possible rules, producing another stream of extended frames.
+  ;                                 ^^^^^^^
+  ; These two streams are combined (using stream-append-delayed, section 4.4.4.6)
+  ;                                                                      ^^^^^^^
+  ; to make a stream of all the ways that the given pattern can be satisfied consistent with the original frame (see exercise 4.71).
+
+  ; The streams for the individual input frames are combined using stream-flatmap (section 4.4.4.6)
+  ;                                                                                        ^^^^^^^
+  ; to form one large stream of all the ways
+  ; that any of the frames in the original input stream can be extended to produce a match with the given pattern.
   (stream-flatmap
    (lambda (frame)
      (stream-append-delayed
@@ -113,26 +134,61 @@
       (delay (apply-rules query-pattern frame))))
    frame-stream))
 
-  ; For each frame in the input stream, we use find-assertions (section 4.4.4.3) to match the pattern against all assertions in the data base, producing a stream of extended frames, and we use apply-rules (section 4.4.4.4) to apply all possible rules, producing another stream of extended frames. These two streams are combined (using stream-append-delayed, section 4.4.4.6) to make a stream of all the ways that the given pattern can be satisfied consistent with the original frame (see exercise 4.71). The streams for the individual input frames are combined using stream-flatmap (section 4.4.4.6) to form one large stream of all the ways that any of the frames in the original input stream can be extended to produce a match with the given pattern.
 
-  ; Compound queries
+; Compound queries
 
-  ; And queries are handled as illustrated in figure 4.5 by the conjoin procedure. Conjoin takes as inputs the conjuncts and the frame stream and returns the stream of extended frames. First, conjoin processes the stream of frames to find the stream of all possible frame extensions that satisfy the first query in the conjunction. Then, using this as the new frame stream, it recursively applies conjoin to the rest of the queries.
+; "and" queries are handled as illustrated in                   <figure 4.5>                      by the conjoin procedure.
+;                                                                                                        =======
+;                                                            .-----------------.
+;                                              input stream  |    (and A B)    |  output stream
+;                                                 of frames  |  .---.   .---.  |  of frames
+;                                             ----------------->| A |-->| B |------------------->
+;                                                            |  '---'   '---'  |
+;                                                            |    ^       ^    |
+;                                                            |    |       |    |
+;                                                            |    '---+---'    |
+;                                                            '--------|--------'
+;                                                                     |
+;                                                                 data base
 
+; Conjoin takes as inputs the conjuncts and the frame stream and returns the stream of extended frames.
 (define (conjoin conjuncts frame-stream)
   (if (empty-conjunction? conjuncts)
       frame-stream
       (conjoin (rest-conjuncts conjuncts)
-               (qeval (first-conjunct conjuncts)
-                      frame-stream))))
+               ; First, conjoin processes the stream of frames to find the stream of all possible frame extensions that satisfy
+               (qeval (first-conjunct conjuncts) ; the first query in the conjunction.
+                      frame-stream)))) ; Then, using this as the new frame stream,
+               ; it recursively applies conjoin to the rest of the queries.
 
-  ; The expression
+; The expression
+;   (put 'and 'qeval conjoin)
+; sets up qeval to dispatch to conjoin when an and form is encountered.
 
-  ; (put 'and 'qeval conjoin)
+; "or" queries are handled similarly, as shown in                        <figure 4.6>.
+;                                                                .----------------------------.
+;                                                                |                  (or A B)  |
+;                                                                |    .---.                   |
+;                                                                | .->| A |-------------.     |
+;                                                         input  | |  '---'             |     |  output
+;                                                        stream  | |    ^               v     |  stream
+;                                                     of frames  | |    |           .-------. |  of frames
+;                                                 -----------------+    |           | merge |-------------->
+;                                                                | |    |           '-------' |
+;                                                                | |    |               ^     |
+;                                                                | |    |     .---.     |     |
+;                                                                | '----|---->| B |-----'     |
+;                                                                |      |     '---'           |
+;                                                                |      |       ^             |
+;                                                                |      |       |             |
+;                                                                |      '---+---'             |
+;                                                                '----------|-----------------'
+;                                                                           |
+;                                                                       data base
 
-  ; sets up qeval to dispatch to conjoin when an and form is encountered.
-
-  ; Or queries are handled similarly, as shown in figure 4.6. The output streams for the various disjuncts of the or are computed separately and merged using the interleave-delayed procedure from section 4.4.4.6. (See exercises 4.71 and 4.72.)
+; The output streams for the various disjuncts of the or are computed separately and merged
+; using the interleave-delayed procedure from section 4.4.4.6. (See exercises 4.71 and 4.72.)
+;                                                     ^^^^^^^
 
 (define (disjoin disjuncts frame-stream)
   (if (empty-disjunction? disjuncts)

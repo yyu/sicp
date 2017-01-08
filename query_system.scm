@@ -43,6 +43,7 @@
                                                  ;     a new stream consisting of
                                                  ;         copies of the original query
                                                  ;             in which the variables are instantiated with values supplied by the stream of frames,
+                                                 ;                                        ~~~~~~~~~~~
                                                  ;         .-------------------. .-------------------.
                                                  ;         | foo A  and B  bar | | foo A' and B' bar | ... ...
                                                  ;         '-------------------' '-------------------'
@@ -68,9 +69,11 @@
 ;                                                               ^^^^^^^
 
 
+;  .-------------------.  instantiate   .-------------------.
+;  | foo ?x and ?y bar | -------------> | foo A  and B  bar |
+;  '-------------------'                '-------------------'
 (define (instantiate exp frame unbound-var-handler)  ; To instantiate an expression, we
-  (define (copy exp)                                 ; copy it,
-                                                     ; replacing any variables in the expression by their values in a given frame.
+  (define (copy exp)                                 ; copy it, replacing any variables in the expression by their values in a given frame.
                                                      ; The values are themselves instantiated, since they could contain variables (for example,
                                                      ; if ?x in exp is bound to ?y as the result of unification and ?y is in turn bound to 5).
     (cond ((var? exp)
@@ -138,7 +141,7 @@
 ; Compound queries
 
 ; "and" queries are handled as illustrated in                   <figure 4.5>                      by the conjoin procedure.
-;                                                                                                        =======
+;                                                                                                        ~~~~~~~
 ;                                                            .-----------------.
 ;                                              input stream  |    (and A B)    |  output stream
 ;                                                 of frames  |  .---.   .---.  |  of frames
@@ -162,8 +165,8 @@
                ; it recursively applies conjoin to the rest of the queries.
 
 ; The expression
-;   (put 'and 'qeval conjoin)
-; sets up qeval to dispatch to conjoin when an and form is encountered.
+(put 'and 'qeval conjoin)
+; sets up qeval to dispatch to conjoin when an "and" form is encountered.
 
 ; "or" queries are handled similarly, as shown in                        <figure 4.6>.
 ;                                                                .----------------------------.
@@ -199,13 +202,15 @@
                        frame-stream)))))
 (put 'or 'qeval disjoin)
 
-  ; The predicates and selectors for the syntax of conjuncts and disjuncts are given in section 4.4.4.7.
+; The predicates and selectors for the syntax of conjuncts and disjuncts are given in section 4.4.4.7.
 
 
-  ; Filters
+; Filters
 
-  ; Not is handled by the method outlined in section 4.4.2. We attempt to extend each frame in the input stream to satisfy the query being negated, and we include a given frame in the output stream only if it cannot be extended.
-
+; "not" is handled by the method outlined in section 4.4.2.
+;                                                    ^^^^^
+; We attempt to extend each frame in the input stream to satisfy the query being negated,
+; and we include a given frame in the output stream only if it cannot be extended.
 (define (negate operands frame-stream)
   (stream-flatmap
    (lambda (frame)
@@ -216,10 +221,13 @@
    frame-stream))
 (put 'not 'qeval negate)
 
-  ; Lisp-value is a filter similar to not. Each frame in the stream is used to instantiate the variables in the pattern, the indicated predicate is applied, and the frames for which the predicate returns false are filtered out of the input stream. An error results if there are unbound pattern variables.
-
+; Lisp-value is a filter similar to not.
 (define (lisp-value call frame-stream)
   (stream-flatmap
+   ; Each frame in the stream is used to instantiate the variables in the pattern,
+   ; the indicated predicate is applied,
+   ; and the frames for which the predicate returns false are filtered out of the input stream.
+   ; An error results if there are unbound pattern variables.
    (lambda (frame)
      (if (execute
           (instantiate
@@ -227,23 +235,30 @@
            frame
            (lambda (v f)
              (error "Unknown pat var -- LISP-VALUE" v))))
-         (singleton-stream frame)
-         the-empty-stream))
+         (singleton-stream frame)  ; predicate returns true
+         the-empty-stream))        ; predicate returns false
    frame-stream))
 (put 'lisp-value 'qeval lisp-value)
 
-  ; Execute, which applies the predicate to the arguments, must eval the predicate expression to get the procedure to apply. However, it must not evaluate the arguments, since they are already the actual arguments, not expressions whose evaluation (in Lisp) will produce the arguments. Note that execute is implemented using eval and apply from the underlying Lisp system.
-
+;; ??? ;;
+; Execute, which applies the predicate to the arguments, must eval the predicate expression to get the procedure to apply.
+; However, it must not evaluate the arguments, since they are already the actual arguments,
+; not expressions whose evaluation (in Lisp) will produce the arguments.
+; Note that execute is implemented using eval and apply from the underlying Lisp system.
 (define (execute exp)
   (apply (eval (predicate exp) user-initial-environment)
          (args exp)))
 
-  ; The always-true special form provides for a query that is always satisfied. It ignores its contents (normally empty) and simply passes through all the frames in the input stream. Always-true is used by the rule-body selector (section 4.4.4.7) to provide bodies for rules that were defined without bodies (that is, rules whose conclusions are always satisfied).
-
+; The always-true special form provides for a query that is always satisfied.
+; It ignores its contents (normally empty) and simply passes through all the frames in the input stream.
+; Always-true is used by the rule-body selector (section 4.4.4.7) to provide bodies for rules
+;                                                        ^^^^^^^
+; that were defined without bodies (that is, rules whose conclusions are always satisfied).
 (define (always-true ignore frame-stream) frame-stream)
 (put 'always-true 'qeval always-true)
 
-  ; The selectors that define the syntax of not and lisp-value are given in section 4.4.4.7.
+; The selectors that define the syntax of not and lisp-value are given in section 4.4.4.7.
+;                                                                                 ^^^^^^^
 
 
   ; 4.4.4.3  Finding Assertions by Pattern Matching

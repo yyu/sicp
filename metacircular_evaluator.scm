@@ -3,14 +3,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                                                                  ;
+;                       subexpression subexpression subexpression subexpressions                                   ;
+;                                 |        |         |            |                                                ;
+;                                 v        v         v            v                                                ;
+; compound expression :       (operator  operand-1  operand-2   ...)                                               ;
+;                              --------  ---------  ---------                                                      ;
+;                                                                                                                  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                                                                  ;
 ;                                1. eval the subexpressions                                                        ;
 ;                        eval    |  ----                                                                           ;
-; compound expression  ------->  |                                                                                 ;
+; compound expression  -------*  |                                                                                 ;
 ;                                |                                                                                 ;
 ;                                2. apply the value of operator subexpression                                      ;
-;                                   ^^^^^                                                                          ;
+;                                   ^^^^^              --------                                                    ;
 ;                                      to the values of operand subexpressions                                     ;
-;                                      ^^                                                                          ;
+;                                      ^^               -------                                                    ;
 ;                                                                                                                  ;
 ;                                                                                                                  ;
 ;                        expressions                                                                               ;
@@ -45,14 +53,13 @@
 ;                                                                                                                  ;
 ;             procedures to be applied to arguments                                                                ;
 ;                                                                                                                  ;
-;                                                                                                                  ;
-;                                                                   | formal parameters -. are   |                 ;
-;                                  1. extend environment by a frame |                    | bound |                 ;
-; compound procedure --.           |                                |        arguments <-' to    |                 ;
-;                      | apply to  |                                                                               ;
-;        arguments <---' ^^^^^ ^^  |                                                                               ;
-;                                  2. eval the body of the procedure in the new environment                        ;
-;                                     ----                                                                         ;
+;                                                                        | formal parameters -. are   |            ;
+;                                       1. extend environment by a frame |                    | bound |            ;
+; compound procedure ------->-.         |                                |        arguments <-' to    |            ;
+;                             |         |                                                                          ;
+;        arguments *--------<-'         |                                                                          ;
+;                    apply to           2. eval the body of the procedure in the new environment                   ;
+;                    ^^^^^ ^^              ----                                                                    ;
 ;                                                                                                                  ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

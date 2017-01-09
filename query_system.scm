@@ -367,16 +367,22 @@
 ; against the list
 ;                  (programmer trainee).
 
-  ; 4.4.4.4  Rules and Unification
+; 4.4.4.4  Rules and Unification
 
-  ; Apply-rules is the rule analog of find-assertions (section 4.4.4.3). It takes as input a pattern and a frame, and it forms a stream of extension frames by applying rules from the data base. Stream-flatmap maps apply-a-rule down the stream of possibly applicable rules (selected by fetch-rules, section 4.4.4.5) and combines the resulting streams of frames.
-
+; "apply-rules" is the rule analog of find-assertions (section 4.4.4.3).
+;                                                              ^^^^^^^
 (define (apply-rules pattern frame)
+  ; It takes as input a pattern and a frame, and it forms a stream of extension frames by applying rules from the data base.
+  ; Stream-flatmap maps apply-a-rule down the stream of possibly applicable rules (selected by fetch-rules, section 4.4.4.5)
+  ;                                                                                                                 ^^^^^^^
+  ; and combines the resulting streams of frames.
   (stream-flatmap (lambda (rule)
                     (apply-a-rule rule pattern frame))
                   (fetch-rules pattern frame)))
 
-  ; Apply-a-rule applies rules using the method outlined in section 4.4.2. It first augments its argument frame by unifying the rule conclusion with the pattern in the given frame. If this succeeds, it evaluates the rule body in this new frame.
+; Apply-a-rule applies rules using the method outlined in section 4.4.2.
+;                                                                 ^^^^^
+; It first augments its argument frame by unifying the rule conclusion with the pattern in the given frame. If this succeeds, it evaluates the rule body in this new frame.
 
   ; Before any of this happens, however, the program renames all the variables in the rule with unique new names. The reason for this is to prevent the variables for different rule applications from becoming confused with each other. For instance, if two rules both use a variable named ?x, then each one may add a binding for ?x to the frame when it is applied. These two ?x's have nothing to do with each other, and we should not be fooled into thinking that the two bindings must be consistent. Rather than rename variables, we could devise a more clever environment structure; however, the renaming approach we have chosen here is the most straightforward, even if not the most efficient. (See exercise 4.79.) Here is the apply-a-rule procedure:
 

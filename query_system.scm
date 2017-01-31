@@ -382,10 +382,15 @@
 
 ; Apply-a-rule applies rules using the method outlined in section 4.4.2.
 ;                                                                 ^^^^^
-; It first augments its argument frame by unifying the rule conclusion with the pattern in the given frame. If this succeeds, it evaluates the rule body in this new frame.
-
-  ; Before any of this happens, however, the program renames all the variables in the rule with unique new names. The reason for this is to prevent the variables for different rule applications from becoming confused with each other. For instance, if two rules both use a variable named ?x, then each one may add a binding for ?x to the frame when it is applied. These two ?x's have nothing to do with each other, and we should not be fooled into thinking that the two bindings must be consistent. Rather than rename variables, we could devise a more clever environment structure; however, the renaming approach we have chosen here is the most straightforward, even if not the most efficient. (See exercise 4.79.) Here is the apply-a-rule procedure:
-
+; It first augments its argument frame by unifying the rule conclusion with the pattern in the given frame.
+; If this succeeds, it evaluates the rule body in this new frame.
+;
+; Before any of this happens, however, the program renames all the variables in the rule with unique new names.
+; The reason for this is to prevent the variables for different rule applications from becoming confused with each other.
+; For instance, if two rules both use a variable named ?x, then each one may add a binding for ?x to the frame when it is applied.
+; These two ?x's have nothing to do with each other, and we should not be fooled into thinking that the two bindings must be consistent.
+; Rather than rename variables, we could devise a more clever environment structure; however, the renaming approach we have chosen here is the most straightforward, even if not the most efficient.
+; (See exercise 4.79.) Here is the apply-a-rule procedure:
 (define (apply-a-rule rule query-pattern query-frame)
   (let ((clean-rule (rename-variables-in rule)))
     (let ((unify-result

@@ -111,10 +111,10 @@
 
 (define (simple-query query-pattern frame-stream)  ; The simple-query procedure handles simple queries.
   ; It takes as arguments a simple query (a pattern) together with a stream of frames,
-                        ; .-------------------.                    .--------. .--------.
-                        ; | foo ?x and ?y bar |                    |        | |        |
-                        ; '-------------------'                    |        | |        | ... stream of frames ...
-                        ;                                          '--------' '--------'
+  ;                       .-------------------.                    .--------. .--------.
+  ;                       | foo ?x and ?y bar |                    |        | |        |
+  ;                       '-------------------'                    |        | |        | ... stream of frames ...
+  ;                                                                '--------' '--------'
   ; and it returns the stream formed by extending each frame by all data-base matches of the query.
 
   ; For each frame in the input stream, we use find-assertions (section 4.4.4.3)
@@ -389,8 +389,11 @@
 ; The reason for this is to prevent the variables for different rule applications from becoming confused with each other.
 ; For instance, if two rules both use a variable named ?x, then each one may add a binding for ?x to the frame when it is applied.
 ; These two ?x's have nothing to do with each other, and we should not be fooled into thinking that the two bindings must be consistent.
-; Rather than rename variables, we could devise a more clever environment structure; however, the renaming approach we have chosen here is the most straightforward, even if not the most efficient.
-; (See exercise 4.79.) Here is the apply-a-rule procedure:
+
+; Rather than rename variables, we could devise a more clever environment structure; however, the renaming approach we have chosen here
+; is the most straightforward, even if not the most efficient. (See exercise 4.79.)
+
+; Here is the apply-a-rule procedure:
 (define (apply-a-rule rule query-pattern query-frame)
   (let ((clean-rule (rename-variables-in rule)))
     (let ((unify-result
@@ -402,14 +405,22 @@
           (qeval (rule-body clean-rule)
                  (singleton-stream unify-result))))))
 
-  ; The selectors rule-body and conclusion that extract parts of a rule are defined in section 4.4.4.7.
-
-  ; We generate unique variable names by associating a unique identifier (such as a number) with each rule application and combining this identifier with the original variable names. For example, if the rule-application identifier is 7, we might change each ?x in the rule to ?x-7 and each ?y in the rule to ?y-7. (Make-new-variable and new-rule-application-id are included with the syntax procedures in section 4.4.4.7.)
+; The selectors rule-body and conclusion that extract parts of a rule are defined in section 4.4.4.7.
+;                                                                                            ^^^^^^^
 
 (define (rename-variables-in rule)
   (let ((rule-application-id (new-rule-application-id)))
     (define (tree-walk exp)
       (cond ((var? exp)
+             ; We generate unique variable names by
+             ;     associating a unique identifier (such as a number) with each rule application
+             ; and
+             ;     combining this identifier with the original variable names.
+             ;
+             ; For example, if the rule-application identifier is 7, we might change each ?x in the rule to ?x-7 and each ?y in the rule to ?y-7.
+             
+             ; (Make-new-variable and new-rule-application-id are included with the syntax procedures in section 4.4.4.7.)
+             ;                                                                                                   ^^^^^^^
              (make-new-variable exp rule-application-id))
             ((pair? exp)
              (cons (tree-walk (car exp))
@@ -417,8 +428,14 @@
             (else exp)))
     (tree-walk rule)))
 
-  ; The unification algorithm is implemented as a procedure that takes as inputs two patterns and a frame and returns either the extended frame or the symbol failed. The unifier is like the pattern matcher except that it is symmetrical -- variables are allowed on both sides of the match. Unify-match is basically the same as pattern-match, except that there is extra code (marked ``***'' below) to handle the case where the object on the right side of the match is a variable.
-
+; The unification algorithm is implemented as a procedure that
+; takes as inputs two patterns and a frame and
+; returns either the extended frame or the symbol failed.
+;
+; The unifier is like the pattern matcher except that it is symmetrical -- variables are allowed on both sides of the match.
+;
+; Unify-match is basically the same as pattern-match, except that
+; there is extra code (marked ``***'' below) to handle the case where the object on the right side of the match is a variable.
 (define (unify-match p1 p2 frame)
   (cond ((eq? frame 'failed) 'failed)
         ((equal? p1 p2) frame)
@@ -432,10 +449,39 @@
                                    frame)))
         (else 'failed)))
 
-  ; In unification, as in one-sided pattern matching, we want to accept a proposed extension of the frame only if it is consistent with existing bindings. The procedure extend-if-possible used in unification is the same as the extend-if-consistent used in pattern matching except for two special checks, marked ``***'' in the program below. In the first case, if the variable we are trying to match is not bound, but the value we are trying to match it with is itself a (different) variable, it is necessary to check to see if the value is bound, and if so, to match its value. If both parties to the match are unbound, we may bind either to the other.
+; In unification, as in one-sided pattern matching, we want to accept a proposed extension of the frame
+; only if it is consistent with existing bindings.
+;
+; The procedure extend-if-possible used in unification is the same as the extend-if-consistent used in pattern matching
+; except for two special checks, marked ``***'' in the program below.
 
-  ; The second check deals with attempts to bind a variable to a pattern that includes that variable. Such a situation can occur whenever a variable is repeated in both patterns. Consider, for example, unifying the two patterns (?x ?x) and (?y <expression involving ?y>) in a frame where both ?x and ?y are unbound. First ?x is matched against ?y, making a binding of ?x to ?y. Next, the same ?x is matched against the given expression involving ?y. Since ?x is already bound to ?y, this results in matching ?y against the expression. If we think of the unifier as finding a set of values for the pattern variables that make the patterns the same, then these patterns imply instructions to find a ?y such that ?y is equal to the expression involving ?y. There is no general method for solving such equations, so we reject such bindings; these cases are recognized by the predicate depends-on?.80 On the other hand, we do not want to reject attempts to bind a variable to itself. For example, consider unifying (?x ?x) and (?y ?y). The second attempt to bind ?x to ?y matches ?y (the stored value of ?x) against ?y (the new value of ?x). This is taken care of by the equal? clause of unify-match.
+; In the first case,
+;     if the variable we are trying to match is not bound, but
+;     the value we are trying to match it with is itself a (different) variable,
+; it is necessary to check
+;     to see if the value is bound, and
+;         if so, to match its value.
+;         If both parties to the match are unbound, we may bind either to the other.
 
+; The second check deals with attempts to bind a variable to a pattern that includes that variable.
+; Such a situation can occur whenever a variable is repeated in both patterns.
+;
+; Consider, for example,
+;     unifying the two patterns (?x ?x) and (?y <expression involving ?y>) in a frame where both ?x and ?y are unbound.
+;
+; First ?x is matched against ?y, making a binding of ?x to ?y.
+; Next, the same ?x is matched against the given expression involving ?y.
+; Since ?x is already bound to ?y, this results in matching ?y against the expression.
+;
+; If we think of the unifier as finding a set of values for the pattern variables that make the patterns the same,
+; then these patterns imply instructions to find a ?y such that ?y is equal to the expression involving ?y.
+; There is no general method for solving such equations, so we reject such bindings; these cases are recognized by the predicate depends-on?.
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;
+; On the other hand, we do not want to reject attempts to bind a variable to itself.
+; For example, consider unifying (?x ?x) and (?y ?y).
+; The second attempt to bind ?x to ?y matches ?y (the stored value of ?x) against ?y (the new value of ?x).
+; This is taken care of by the equal? clause of unify-match.
 (define (extend-if-possible var val frame)
   (let ((binding (binding-in-frame var frame)))
     (cond (binding
@@ -451,8 +497,10 @@
            'failed)
           (else (extend var val frame)))))
 
-  ; Depends-on? is a predicate that tests whether an expression proposed to be the value of a pattern variable depends on the variable. This must be done relative to the current frame because the expression may contain occurrences of a variable that already has a value that depends on our test variable. The structure of depends-on? is a simple recursive tree walk in which we substitute for the values of variables whenever necessary.
-
+; Depends-on? is a predicate that tests whether an expression proposed to be the value of a pattern variable depends on the variable.
+; This must be done relative to the current frame because
+; the expression may contain occurrences of a variable that already has a value that depends on our test variable.
+; The structure of depends-on? is a simple recursive tree walk in which we substitute for the values of variables whenever necessary.
 (define (depends-on? exp var frame)
   (define (tree-walk e)
     (cond ((var? e)

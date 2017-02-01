@@ -677,9 +677,9 @@
   (cons-stream x the-empty-stream))
 
 
-  ; 4.4.4.7  Query Syntax Procedures
+; 4.4.4.7  Query Syntax Procedures
 
-  ; Type and contents, used by qeval (section 4.4.4.2), specify that a special form is identified by the symbol in its car. They are the same as the type-tag and contents procedures in section 2.4.2, except for the error message.
+; Type and contents, used by qeval (section 4.4.4.2), specify that a special form is identified by the symbol in its car.
 
 (define (type exp)
   (if (pair? exp)
@@ -690,15 +690,14 @@
       (cdr exp)
       (error "Unknown expression CONTENTS" exp)))
 
-  ; The following procedures, used by query-driver-loop (in section 4.4.4.1), specify that rules and assertions are added to the data base by expressions of the form (assert! <rule-or-assertion>):
-
+; The following procedures, used by query-driver-loop (in section 4.4.4.1), specify that
+; rules and assertions are added to the data base by expressions of the form (assert! <rule-or-assertion>):
 (define (assertion-to-be-added? exp)
   (eq? (type exp) 'assert!))
 (define (add-assertion-body exp)
   (car (contents exp)))
 
-  ; Here are the syntax definitions for the and, or, not, and lisp-value special forms (section 4.4.4.2):
-
+; Here are the syntax definitions for the and, or, not, and lisp-value special forms (section 4.4.4.2):
 (define (empty-conjunction? exps) (null? exps))
 (define (first-conjunct exps) (car exps))
 (define (rest-conjuncts exps) (cdr exps))
@@ -709,8 +708,7 @@
 (define (predicate exps) (car exps))
 (define (args exps) (cdr exps))
 
-  ; The following three procedures define the syntax of rules:
-
+; The following three procedures define the syntax of rules:
 (define (rule? statement)
   (tagged-list? statement 'rule))
 (define (conclusion rule) (cadr rule))
@@ -719,8 +717,13 @@
       '(always-true)
       (caddr rule)))
 
-  ; Query-driver-loop (section 4.4.4.1) calls query-syntax-process to transform pattern variables in the expression, which have the form ?symbol, into the internal format (? symbol). That is to say, a pattern such as (job ?x ?y) is actually represented internally by the system as (job (? x) (? y)). This increases the efficiency of query processing, since it means that the system can check to see if an expression is a pattern variable by checking whether the car of the expression is the symbol ?, rather than having to extract characters from the symbol. The syntax transformation is accomplished by the following procedure:81
-
+; Query-driver-loop (section 4.4.4.1) calls query-syntax-process to transform pattern variables in the expression,
+; which have the form ?symbol, into the internal format (? symbol).
+; That is to say, a pattern such as (job ?x ?y) is actually represented internally by the system as (job (? x) (? y)).
+; This increases the efficiency of query processing, since it means that the system can check to see
+; if an expression is a pattern variable by checking whether the car of the expression is the symbol ?,
+; rather than having to extract characters from the symbol.
+; The syntax transformation is accomplished by the following procedure:
 (define (query-syntax-process exp)
   (map-over-symbols expand-question-mark exp))
 (define (map-over-symbols proc exp)
@@ -737,14 +740,14 @@
                (substring chars 1 (string-length chars))))
         symbol)))
 
-  ; Once the variables are transformed in this way, the variables in a pattern are lists starting with ?, and the constant symbols (which need to be recognized for data-base indexing, section 4.4.4.5) are just the symbols.
-
+; Once the variables are transformed in this way, the variables in a pattern are lists starting with ?,
+; and the constant symbols (which need to be recognized for data-base indexing, section 4.4.4.5) are just the symbols.
 (define (var? exp)
   (tagged-list? exp '?))
 (define (constant-symbol? exp) (symbol? exp))
 
-  ; Unique variables are constructed during rule application (in section 4.4.4.4) by means of the following procedures. The unique identifier for a rule application is a number, which is incremented each time a rule is applied.
-
+; Unique variables are constructed during rule application (in section 4.4.4.4) by means of the following procedures.
+; The unique identifier for a rule application is a number, which is incremented each time a rule is applied.
 (define rule-counter 0)
 (define (new-rule-application-id)
   (set! rule-counter (+ 1 rule-counter))
@@ -752,8 +755,8 @@
 (define (make-new-variable var rule-application-id)
   (cons '? (cons rule-application-id (cdr var))))
 
-  ; When query-driver-loop instantiates the query to print the answer, it converts any unbound pattern variables back to the right form for printing, using
-
+; When query-driver-loop instantiates the query to print the answer,
+; it converts any unbound pattern variables back to the right form for printing, using
 (define (contract-question-mark variable)
   (string->symbol
    (string-append "?" 

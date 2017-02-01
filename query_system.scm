@@ -680,6 +680,7 @@
 ; 4.4.4.7  Query Syntax Procedures
 
 ; Type and contents, used by qeval (section 4.4.4.2), specify that a special form is identified by the symbol in its car.
+;                                           ^^^^^^^
 
 (define (type exp)
   (if (pair? exp)
@@ -691,6 +692,7 @@
       (error "Unknown expression CONTENTS" exp)))
 
 ; The following procedures, used by query-driver-loop (in section 4.4.4.1), specify that
+;                                                                 ^^^^^^^
 ; rules and assertions are added to the data base by expressions of the form (assert! <rule-or-assertion>):
 (define (assertion-to-be-added? exp)
   (eq? (type exp) 'assert!))
@@ -698,6 +700,7 @@
   (car (contents exp)))
 
 ; Here are the syntax definitions for the and, or, not, and lisp-value special forms (section 4.4.4.2):
+;                                                                                             ^^^^^^^
 (define (empty-conjunction? exps) (null? exps))
 (define (first-conjunct exps) (car exps))
 (define (rest-conjuncts exps) (cdr exps))
@@ -718,6 +721,7 @@
       (caddr rule)))
 
 ; Query-driver-loop (section 4.4.4.1) calls query-syntax-process to transform pattern variables in the expression,
+;                            ^^^^^^^
 ; which have the form ?symbol, into the internal format (? symbol).
 ; That is to say, a pattern such as (job ?x ?y) is actually represented internally by the system as (job (? x) (? y)).
 ; This increases the efficiency of query processing, since it means that the system can check to see
@@ -742,11 +746,13 @@
 
 ; Once the variables are transformed in this way, the variables in a pattern are lists starting with ?,
 ; and the constant symbols (which need to be recognized for data-base indexing, section 4.4.4.5) are just the symbols.
+;                                                                                       ^^^^^^^
 (define (var? exp)
   (tagged-list? exp '?))
 (define (constant-symbol? exp) (symbol? exp))
 
 ; Unique variables are constructed during rule application (in section 4.4.4.4) by means of the following procedures.
+;                                                                      ^^^^^^^
 ; The unique identifier for a rule application is a number, which is incremented each time a rule is applied.
 (define rule-counter 0)
 (define (new-rule-application-id)
@@ -767,10 +773,9 @@
          (symbol->string (cadr variable))))))
 
 
-  ; 4.4.4.8  Frames and Bindings
+; 4.4.4.8  Frames and Bindings
 
-  ; Frames are represented as lists of bindings, which are variable-value pairs:
-
+; Frames are represented as lists of bindings, which are variable-value pairs:
 (define (make-binding variable value)
   (cons variable value))
 (define (binding-variable binding)

@@ -517,10 +517,23 @@
   (tree-walk exp))
 
 
-  ; 4.4.4.5  Maintaining the Data Base
+; 4.4.4.5  Maintaining the Data Base
 
-  ; One important problem in designing logic programming languages is that of arranging things so that as few irrelevant data-base entries as possible will be examined in checking a given pattern. In our system, in addition to storing all assertions in one big stream, we store all assertions whose cars are constant symbols in separate streams, in a table indexed by the symbol. To fetch an assertion that may match a pattern, we first check to see if the car of the pattern is a constant symbol. If so, we return (to be tested using the matcher) all the stored assertions that have the same car. If the pattern's car is not a constant symbol, we return all the stored assertions. Cleverer methods could also take advantage of information in the frame, or try also to optimize the case where the car of the pattern is not a constant symbol. We avoid building our criteria for indexing (using the car, handling only the case of constant symbols) into the program; instead we call on predicates and selectors that embody our criteria.
-
+; One important problem in designing logic programming languages is that of arranging things so that
+; as few irrelevant data-base entries as possible will be examined in checking a given pattern.
+;
+; In our system, in addition to storing all assertions in one big stream,
+; we store all assertions whose cars are constant symbols in separate streams, in a table indexed by the symbol.
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;
+; To fetch an assertion that may match a pattern, we first check to see if the car of the pattern is a constant symbol.
+; If so, we return (to be tested using the matcher) all the stored assertions that have the same car.
+; If the pattern's car is not a constant symbol, we return all the stored assertions.
+;
+; Cleverer methods could also take advantage of information in the frame,
+; or try also to optimize the case where the car of the pattern is not a constant symbol.
+; We avoid building our criteria for indexing (using the car, handling only the case of constant symbols) into the program;
+; instead we call on predicates and selectors that embody our criteria.
 (define THE-ASSERTIONS the-empty-stream)
 (define (fetch-assertions pattern frame)
   (if (use-index? pattern)
@@ -530,14 +543,18 @@
 (define (get-indexed-assertions pattern)
   (get-stream (index-key-of pattern) 'assertion-stream))
 
-  ; Get-stream looks up a stream in the table and returns an empty stream if nothing is stored there.
-
+; Get-stream looks up a stream in the table and returns an empty stream if nothing is stored there.
 (define (get-stream key1 key2)
   (let ((s (get key1 key2)))
     (if s s the-empty-stream)))
 
-  ; Rules are stored similarly, using the car of the rule conclusion. Rule conclusions are arbitrary patterns, however, so they differ from assertions in that they can contain variables. A pattern whose car is a constant symbol can match rules whose conclusions start with a variable as well as rules whose conclusions have the same car. Thus, when fetching rules that might match a pattern whose car is a constant symbol we fetch all rules whose conclusions start with a variable as well as those whose conclusions have the same car as the pattern. For this purpose we store all rules whose conclusions start with a variable in a separate stream in our table, indexed by the symbol ?.
-
+; Rules are stored similarly, using the car of the rule conclusion.
+; Rule conclusions are arbitrary patterns, however, so they differ from assertions in that they can contain variables.
+; A pattern whose car is a constant symbol can match rules whose conclusions start with a variable
+; as well as rules whose conclusions have the same car.
+; Thus, when fetching rules that might match a pattern whose car is a constant symbol we fetch all rules
+; whose conclusions start with a variable as well as those whose conclusions have the same car as the pattern.
+; For this purpose we store all rules whose conclusions start with a variable in a separate stream in our table, indexed by the symbol ?.
 (define THE-RULES the-empty-stream)
 (define (fetch-rules pattern frame)
   (if (use-index? pattern)
@@ -549,8 +566,8 @@
    (get-stream (index-key-of pattern) 'rule-stream)
    (get-stream '? 'rule-stream)))
 
-  ; Add-rule-or-assertion! is used by query-driver-loop to add assertions and rules to the data base. Each item is stored in the index, if appropriate, and in a stream of all assertions or rules in the data base.
-
+; Add-rule-or-assertion! is used by query-driver-loop to add assertions and rules to the data base.
+; Each item is stored in the index, if appropriate, and in a stream of all assertions or rules in the data base.
 (define (add-rule-or-assertion! assertion)
   (if (rule? assertion)
       (add-rule! assertion)
@@ -567,7 +584,7 @@
     (set! THE-RULES (cons-stream rule old-rules))
     'ok))
 
-  ; To actually store an assertion or a rule, we check to see if it can be indexed. If so, we store it in the appropriate stream.
+; To actually store an assertion or a rule, we check to see if it can be indexed. If so, we store it in the appropriate stream.
 
 (define (store-assertion-in-index assertion)
   (if (indexable? assertion)
@@ -589,25 +606,26 @@
                  (cons-stream rule
                               current-rule-stream)))))))
 
-  ; The following procedures define how the data-base index is used. A pattern (an assertion or a rule conclusion) will be stored in the table if it starts with a variable or a constant symbol.
+; The following procedures define how the data-base index is used.
+; A pattern (an assertion or a rule conclusion) will be stored in the table if it starts with a variable or a constant symbol.
 
 (define (indexable? pat)
   (or (constant-symbol? (car pat))
       (var? (car pat))))
 
-  ; The key under which a pattern is stored in the table is either ? (if it starts with a variable) or the constant symbol with which it starts.
-
+; The key under which a pattern is stored in the table is either ? (if it starts with a variable) or the constant symbol with which it starts.
 (define (index-key-of pat)
   (let ((key (car pat)))
     (if (var? key) '? key)))
 
-  ; The index will be used to retrieve items that might match a pattern if the pattern starts with a constant symbol.
-
+; The index will be used to retrieve items that might match a pattern if the pattern starts with a constant symbol.
 (define (use-index? pat)
   (constant-symbol? (car pat)))
 
-  ; Exercise 4.70.  What is the purpose of the let bindings in the procedures add-assertion! and add-rule! ? What would be wrong with the following implementation of add-assertion! ? Hint: Recall the definition of the infinite stream of ones in section 3.5.2: (define ones (cons-stream 1 ones)).
-
+; Exercise 4.70.
+; What is the purpose of the let bindings in the procedures add-assertion! and add-rule! ?
+; What would be wrong with the following implementation of add-assertion! ?
+; Hint: Recall the definition of the infinite stream of ones in section 3.5.2: (define ones (cons-stream 1 ones)).
 (define (add-assertion! assertion)
   (store-assertion-in-index assertion)
   (set! THE-ASSERTIONS

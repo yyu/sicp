@@ -626,6 +626,7 @@
 ; What is the purpose of the let bindings in the procedures add-assertion! and add-rule! ?
 ; What would be wrong with the following implementation of add-assertion! ?
 ; Hint: Recall the definition of the infinite stream of ones in section 3.5.2: (define ones (cons-stream 1 ones)).
+;                                                                       ^^^^^
 (define (add-assertion! assertion)
   (store-assertion-in-index assertion)
   (set! THE-ASSERTIONS
@@ -633,12 +634,15 @@
   'ok)
 
 
-  ; 4.4.4.6  Stream Operations
+; 4.4.4.6  Stream Operations
 
-  ; The query system uses a few stream operations that were not presented in chapter 3.
+; The query system uses a few stream operations that were not presented in chapter 3.
 
-  ; Stream-append-delayed and interleave-delayed are just like stream-append and interleave (section 3.5.3), except that they take a delayed argument (like the integral procedure in section 3.5.4). This postpones looping in some cases (see exercise 4.71).
-
+; Stream-append-delayed and interleave-delayed are just like stream-append and interleave (section 3.5.3),
+;                                                                                                  ^^^^^
+; except that they take a delayed argument (like the integral procedure in section 3.5.4).
+;                                                                                  ^^^^^
+; This postpones looping in some cases (see exercise 4.71).
 (define (stream-append-delayed s1 delayed-s2)
   (if (stream-null? s1)
       (force delayed-s2)
@@ -653,8 +657,12 @@
        (interleave-delayed (force delayed-s2)
                            (delay (stream-cdr s1))))))
 
-  ; Stream-flatmap, which is used throughout the query evaluator to map a procedure over a stream of frames and combine the resulting streams of frames, is the stream analog of the flatmap procedure introduced for ordinary lists in section 2.2.3. Unlike ordinary flatmap, however, we accumulate the streams with an interleaving process, rather than simply appending them (see exercises 4.72 and  4.73).
-
+; Stream-flatmap, which is used throughout the query evaluator to map a procedure over a stream of frames
+; and combine the resulting streams of frames, is the stream analog of the flatmap procedure introduced
+; for ordinary lists in section 2.2.3.
+;                               ^^^^^
+; Unlike ordinary flatmap, however, we accumulate the streams with an interleaving process,
+; rather than simply appending them (see exercises 4.72 and  4.73).
 (define (stream-flatmap proc s)
   (flatten-stream (stream-map proc s)))
 (define (flatten-stream stream)
@@ -664,8 +672,7 @@
        (stream-car stream)
        (delay (flatten-stream (stream-cdr stream))))))
 
-  ; The evaluator also uses the following simple procedure to generate a stream consisting of a single element:
-
+; The evaluator also uses the following simple procedure to generate a stream consisting of a single element:
 (define (singleton-stream x)
   (cons-stream x the-empty-stream))
 
